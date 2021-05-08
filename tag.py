@@ -4,12 +4,17 @@ from trilateration import *
 import time
 import serial
 import sys  # for using CLI arguments
+import socket
+
+BIND_ADDR = ""   # represents INADDR_ANY
+BIND_PORT = 50000
+SERVER_ADDR = "piServer"    # resolved in /etc/hosts
+SERVER_PORT = 50000
 
 def initDataTransfer(_ser):
-    
+
     _ser.write('reset\r'.encode())
-    log("reset issued on uwb module")
-    time.sleep(3)
+    time.sleep(1)
     _ser.write('\r\r'.encode())
     time.sleep(1)
     _ser.write('les\r'.encode())
@@ -17,7 +22,26 @@ def initDataTransfer(_ser):
 
 def sendPositionToServer(_pos):
     print("POSITON INFO SENT TO SERVER -> ", _pos)
+    sendStr = "x: " + str(_pos[0]) + " y: " + str(_pos[1])
+    sendToServer("I am TAG1 and located at: " + sendStr)
 
+# socket related functions #
+
+def configureSocket():
+    
+    global sock
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    sock.bind((BIND_ADDR, BIND_PORT))
+
+    return sock
+
+def sendToServer(data):
+    
+    sock.sendto(data.encode(), (SERVER_ADDR, SERVER_PORT))
+    log("message sent to server: ", data)
+    
+# end socket related functions #
 
 def log(*args):
     #print("log: ", *args)
@@ -46,6 +70,9 @@ def loadAnchors():
         lineList[i] = lineList[i].rstrip('\n')
         anchors.append(Anchor(*(lineList[i].split(' '))))
 
+    
+    #print("The following anchors are being loaded:\n")
+    #print(*anchors, sep = '\n') # print anchors
     return anchors
 
 # call format is "python tag.py <serial_port>"
@@ -53,25 +80,26 @@ def main():
 
     # load anchors into memory
     anchors = loadAnchors()
-    #print("The following anchors are being loaded:\n")
-    #print(*anchors, sep = '\n') # print anchors
+
+    sock = configureSocket()
 
     # initialize the serial interface
     # print("CLI ARGUMENTS UNPACKED : ", *(sys.argv))
     try:
         ser = serial.Serial(sys.argv[1])    # argv[0] is the filename!
     except IndexError:
-        print("The call format is \"python tag.py <serial_port>\"")
-        print("aborting.....")
-        exit(1)
-    
+        print("Default serial port is being used: /dev/ttyACM0")
+        ser = serial.Serial("/dev/ttyACM0")
+            
     ser.baudrate = 115200
     ser.timeout = 1
 
     # the location engine has to be disabled beforehand !
 
     # init data transfer from UWB to tag
-    # initDataTransfer(ser)
+    print("init data transfer...")
+    initDataTransfer(ser)
+    print("data transfer initiated")
 
     ser.reset_input_buffer()
     #print("log: input buffer resetted")
@@ -131,3 +159,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
