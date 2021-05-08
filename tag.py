@@ -54,14 +54,14 @@ def main():
     # load anchors into memory
     anchors = loadAnchors()
     #print("The following anchors are being loaded:\n")
-    #print(*anchors, sep = '\n') # #print anchors
+    #print(*anchors, sep = '\n') # print anchors
 
     # initialize the serial interface
     # print("CLI ARGUMENTS UNPACKED : ", *(sys.argv))
     try:
         ser = serial.Serial(sys.argv[1])    # argv[0] is the filename!
     except IndexError:
-        print("The call format is call format is \"python tag.py <serial_port>\"")
+        print("The call format is \"python tag.py <serial_port>\"")
         print("aborting.....")
         exit(1)
     
@@ -126,8 +126,6 @@ def main():
                 ec = 0
                 sendPositionToServer([x/10 for x in estimate_cumulative])
                 estimate_cumulative = [0, 0]
-
-
 
 
 

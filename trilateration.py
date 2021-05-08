@@ -14,7 +14,3 @@ def trilateration(x1,y1,d1,x2,y2,d2,x3,y3,d3):
     estimatedLocation[1] = (1/det_ATA)*((pow(a1,2)+pow(a3,2))*(a2*b1+a4*b2)-(a1*a2+a3*a4)*(a1*b1+a3*b2)) #estimated y coordinate
 
     return estimatedLocation #output is an array of size 2.
-
-#unpack etmek için * koymak lazım başına
-t = (0, 0, 2.5)
-print(trilateration(*t, 1.5, 0, 2, 0,2,1.5 )) #expect 1.5, 2
