@@ -1,5 +1,5 @@
 # color ID xpos(m) ypos(m) # each seperated by a single space character
-red 2A6D 1.5 0
-yellow 089E 0 1.5
-orange 2BC4 5 7.5
+red 2A6D 0.01 0
+yellow 089E 0 2.5
+orange 2BC4 3.3 2.5
 green 20C6 0.85 1.26

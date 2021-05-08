@@ -4,11 +4,17 @@ from trilateration import *
 import time
 import serial
 
+def sendPositionToServer(_pos):
+    log("POSITON INFO SENT TO SERVER -> ", _pos)
 
-def write(str):
-    ser.write(str.encode())
 
+def log(*args):
+    print("log: ", *args)
 
+# prints members of a list each on a newline
+def printListMembers(list):
+    for l in list:
+        print(l)
 
 def loadAnchors():
 
@@ -24,7 +30,7 @@ def loadAnchors():
         if(lineList[i][0] == '#'): # this is a comment line
             continue
         
-        # okunan lineların sonundaki newline characterini al
+        # strip the newline characters at the end of the read lines
         lineList[i] = lineList[i].rstrip('\n')
         anchors.append(Anchor(*(lineList[i].split(' '))))
 
@@ -39,8 +45,11 @@ def main():
 
     ser = serial.Serial('com4')
     ser.baudrate = 115200
-    # ser.timeout = 1
+    ser.timeout = 1
 
+    # the location engine has to be disabled !
+
+    # init data transfer from UWB to tag
     # ser.write('reset\r'.encode())
     # print("log: reset issued on uwb module")
     # time.sleep(3)
@@ -48,14 +57,60 @@ def main():
     # time.sleep(1)
     # ser.write('les\r'.encode())
     # time.sleep(1)
+
     ser.reset_input_buffer()
     print("log: input buffer resetted")
 
-    while True:
-        print("new reading")
-        read_str = ser.read_until(expected = b'\n', size=None)
-        print(read_str)
+    ec = 0      # estimation counter
+    estimate_cumulative = [0, 0]    # x, y pair
 
+    while True:
+
+        log("new reading")
+        read_str = ser.read_until(expected = b'\n', size=None)
+        read_str = read_str.rstrip(b' \r\n')
+        read_str = read_str.decode()    # convert bytes object to a str object
+        distance_readings = read_str.split(sep=' ')
+        
+        printListMembers(distance_readings)
+        
+        anchor_id_dist_pairs = []    # members will be ( , )
+
+        for dr in distance_readings:
+            try:
+                anchor_id_dist_pairs.append((dr[0:4], float(dr[-4:])))
+            except ValueError:
+                continue
+
+        anchor_pos_dist = []   # members will be ( , , )
+        
+        for aidp in anchor_id_dist_pairs:
+            
+            aID = aidp[0]
+            aDist = aidp[1]
+
+            for a in anchors:
+                if(a.id == aID):
+                    anchor_pos_dist.append((a.x, a.y, aDist))
+
+        print(anchor_pos_dist)
+
+        args = [arg for subtuple in anchor_pos_dist[0:3] for arg in subtuple]
+
+        if(len(args) != 9):
+            log("length of args is not 9, continued loop")
+            continue
+        else:
+            position_estimate = trilateration(*args)
+            log("estimation number ", ec)
+            print("Estimated Position : ", position_estimate)
+            estimate_cumulative = [x + y for x, y in zip(estimate_cumulative, position_estimate)]
+            ec = ec + 1   # increase estimation counter
+            
+            if (ec == 10):
+                ec = 0
+                sendPositionToServer([x/10 for x in estimate_cumulative])
+                estimate_cumulative = [0, 0]
 
 
 
