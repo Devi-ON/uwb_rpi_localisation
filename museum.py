@@ -1,5 +1,7 @@
 import pygame
 import time
+import pandas as pd
+import csv
 
 ORIGIN = (30, 30)
 
@@ -8,6 +10,8 @@ DI_H = 20
 
 WALL_W = 1400
 WALL_H = 700
+
+VISITOR_RADIUS = DI_W/2
 
 RATIO = 2
 
@@ -31,17 +35,17 @@ d_name_rgb = {
 
 class Visitor():
     def __init__(self):
-        self.x = 0
+        self.x = 0  # real location w.r.t origin, cm
         self.y = 0
-        self.center = (0, 0)
+        self.center = (0, 0)    # pixel, w.r.t pygame origin at top left
         pass
 
     def draw(self, surface):
         self.center = (ORIGIN[0] + RATIO*self.x), (ORIGIN[1] + RATIO*self.y)
-        pygame.draw.circle(surface, RGB_CYAN , self.center, 12)
+        pygame.draw.circle(surface, RGB_CYAN , self.center, VISITOR_RADIUS)
 
     def writePos(self, surface):
-        text1 = font.render("{}, {}".format(visitor.x, visitor.y), True, RGB_BLUE)
+        text1 = font.render("{}, {}".format(visitor.x, visitor.y), True, RGB_BLACK)
         text1Rect = text1.get_rect()
         text1Pos = visitor.center[0] - text1Rect.width/2, visitor.center[1] - text1Rect.height/2 - 10
         museumWindow.blit(text1, text1Pos)
@@ -93,15 +97,13 @@ def loadDisplayItems():
 
 ## main code ##
 pygame.init()
+museumWindow = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 visitor = Visitor()
-font = pygame.font.Font(None, 16)
-
-
+font = pygame.font.Font(None, 18)
 
 dispItems = loadDisplayItems()
 
-museumWindow = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 runFlag = True
 
 
@@ -118,10 +120,12 @@ while runFlag:
     for di in dispItems:
         di.draw(museumWindow)
 
+    data = pd.read_csv('data.csv')
+    x_pd = data['x_cm']
+    y_pd = data['y_cm']
+    visitor.x = int((x_pd.values[len(x_pd.values) - 1]))
+    visitor.y = int((y_pd.values[len(y_pd.values) - 1]))
 
-    visitor.x += 1
-    visitor.y += 2
-    
     visitor.draw(museumWindow)
     visitor.writePos(museumWindow)
     
